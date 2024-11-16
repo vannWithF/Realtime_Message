@@ -4,14 +4,26 @@ import { Send, Smile, Paperclip, Menu } from 'lucide-react';
 
 const socket: Socket = io('https://h1l3rq2k-8000.asse.devtunnels.ms/');
 
+interface Message {
+    text: string;
+    senderId: string;
+    timestamp: number;
+}
+
 const MessagePages: React.FC = () => {
-    const [messages, setMessages] = useState<string[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState<string>('');
     const [isFocused, setIsFocused] = useState<boolean>(false);
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+    
+    // Generate a unique ID for this device/session
+    const [deviceId] = useState<string>(() => 
+        'device_' + Math.random().toString(36).substr(2, 9)
+    );
 
     useEffect(() => {
-        socket.on('chat message', (msg: string) => {
+        // Listen for incoming messages
+        socket.on('chat message', (msg: Message) => {
             setMessages((prev) => [...prev, msg]);
         });
 
@@ -23,7 +35,12 @@ const MessagePages: React.FC = () => {
     const sendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (input.trim()) {
-            socket.emit('chat message', input);
+            const newMessage: Message = {
+                text: input.trim(),
+                senderId: deviceId,
+                timestamp: Date.now()
+            };
+            socket.emit('chat message', newMessage);
             setInput('');
         }
     };
@@ -32,18 +49,11 @@ const MessagePages: React.FC = () => {
         <div className="w-full min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto h-screen flex flex-col">
                 <div className="flex-1 flex flex-col md:flex-row gap-4 p-2 sm:p-4">
-                    {/* Sidebar - Only visible on larger screens */}
-                    <div className="hidden md:flex flex-col w-64 bg-white rounded-xl shadow-lg p-4 space-y-4">
-                        <h2 className="text-xl font-bold text-gray-800">Chats</h2>
-                        {/* Add sidebar content here */}
-                    </div>
-
                     {/* Main Chat Area */}
                     <div className="flex-1 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
                         {/* Header */}
                         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
                             <h1 className="text-white text-lg sm:text-xl font-bold">Real-Time Chat</h1>
-                            {/* Mobile menu button */}
                             <button 
                                 className="md:hidden p-2 rounded-lg hover:bg-blue-700 text-white"
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -52,33 +62,38 @@ const MessagePages: React.FC = () => {
                             </button>
                         </div>
 
-                        {/* Mobile menu dropdown */}
-                        {isMenuOpen && (
-                            <div className="md:hidden bg-white border-b p-4">
-                                {/* Add mobile menu content here */}
-                                <div className="space-y-2">
-                                    <a href="#" className="block px-4 py-2 hover:bg-gray-100 rounded-lg">Settings</a>
-                                    <a href="#" className="block px-4 py-2 hover:bg-gray-100 rounded-lg">Profile</a>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                             {messages.map((msg, index) => (
                                 <div
                                     key={index}
-                                    className={`flex ${index % 2 === 0 ? 'justify-start' : 'justify-end'} animate-fade-in`}
+                                    className={`flex ${msg.senderId === deviceId ? 'justify-end' : 'justify-start'} animate-fade-in`}
                                 >
                                     <div
-                                        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm
-                                            ${index % 2 === 0
-                                                ? 'bg-gray-100 rounded-tl-none'
-                                                : 'bg-blue-500 text-white rounded-tr-none'
+                                        className={`
+                                            max-w-[85%] sm:max-w-[75%] 
+                                            px-4 py-2.5 
+                                            shadow-sm
+                                            ${msg.senderId === deviceId
+                                                ? 'bg-blue-500 text-white rounded-2xl rounded-tr-none'
+                                                : 'bg-white text-gray-800 rounded-2xl rounded-tl-none'
                                             }
                                         `}
                                     >
-                                        {msg}
+                                        {msg.text}
+                                        <div 
+                                            className={`text-xs mt-1 
+                                                ${msg.senderId === deviceId 
+                                                    ? 'text-blue-100' 
+                                                    : 'text-gray-500'
+                                                }
+                                            `}
+                                        >
+                                            {new Date(msg.timestamp).toLocaleTimeString([], { 
+                                                hour: '2-digit', 
+                                                minute: '2-digit' 
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
