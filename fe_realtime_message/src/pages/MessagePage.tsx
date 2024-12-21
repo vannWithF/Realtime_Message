@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Send, Smile, Paperclip, Menu } from 'lucide-react';
 
-const socket: Socket = io('https://h1l3rq2k-8000.asse.devtunnels.ms/');
+const socket: Socket = io('https://b7dl5g0n-8000.asse.devtunnels.ms/');
 
 interface Message {
     text: string;
